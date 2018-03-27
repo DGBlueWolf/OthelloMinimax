@@ -102,3 +102,15 @@ Change Log:
        2  0  1  1  1  1  0  2
       32  2  4  4  4  4  2 32)
 )
+
+; ref: Othello Heuristics @Kartik Kukreja 
+; https://kartikkukreja.wordpress.com/2013/03/30/heuristic-function-for-reversiothello/
+
+(defun coin-difference (state) 
+    (let ((score (count-pieces (othello-state-board state))))
+        (/ (float (apply #'- score)) (float (apply #'+ score)))
+    )
+)
+
+(defun mobility-stability (state) 
+    (loop for move in (move-generator state))
