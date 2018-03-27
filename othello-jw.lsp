@@ -12,6 +12,14 @@ Usage:      (othello)
 Modifications:
 180322 - Stripped down version with interface and basic functionality for Noah Brubaker.
     Noah will add minimax etc.
+
+180324 - @Noah Fixed game end conditino bug (looped for ever if no player has a move)
+    Line 157 (in game-over): (not (or (can-move board 'B) (can-move board 'W)))
+
+180326 - @Noah Fixed short-circuit bug (was flipping pieces in only one direction) 
+    Line 270 (in valid-move): or -> some 
+
+180326 - @Noah Added computer run to game loop
 |#
 
 ;================  Global Constants ================
@@ -74,7 +82,8 @@ Modifications:
                             ; get move from player
                             ; (setf move (player-move board 'W))
                             ; OR select move randomly
-                            (setf move (nth (random (length moves) *RANDOMSTATE*) moves))
+                            ; (setf move (nth (random (length moves) *RANDOMSTATE*) moves))
+                            (setf move (computer-move board 'W 3 'random-eval-state))
                             (setf row (first move) col (second move))
                             (format t "Selected move: ~a ~a~%~%" row col)
                             (setf board (valid-move board (1- row) (1- col) 'W))
@@ -150,10 +159,7 @@ Modifications:
 
 ; Returns true if the game is over for the given board configuration.
 (defun game-over (board)
-    (dotimes (i (* *SIZE* *SIZE*))
-        (when (eq (nth i board) '-) (return-from game-over nil))
-    )
-    t
+    (not (or (can-move board 'B) (can-move board 'W)))
 )
 
 ;================  Can Move  ================
@@ -266,16 +272,17 @@ Modifications:
         ; try to flip pieces in the various directions
         ; if flipping pieces was successful in some direction,
         ; then return the new board; otherwise return nil
+        ; @weiss We want to try and flip pieces in all directions, or -> some
         (if
-            (or
-                (flip-pieces new-board position piece 1 0)
-                (flip-pieces new-board position piece -1 0)
-                (flip-pieces new-board position piece *SIZE* 0)
-                (flip-pieces new-board position piece (- *SIZE*) 0)
-                (flip-pieces new-board position piece (- (1+ *SIZE*)) 0)
-                (flip-pieces new-board position piece (- 1 *SIZE*) 0)
-                (flip-pieces new-board position piece (1- *SIZE*) 0)
-                (flip-pieces new-board position piece (1+ *SIZE*) 0)
+            (some #'identity `(
+                ,(flip-pieces new-board position piece 1 0)
+                ,(flip-pieces new-board position piece -1 0)
+                ,(flip-pieces new-board position piece *SIZE* 0)
+                ,(flip-pieces new-board position piece (- *SIZE*) 0)
+                ,(flip-pieces new-board position piece (- (1+ *SIZE*)) 0)
+                ,(flip-pieces new-board position piece (- 1 *SIZE*) 0)
+                ,(flip-pieces new-board position piece (1- *SIZE*) 0)
+                ,(flip-pieces new-board position piece (1+ *SIZE*) 0))
             )
             new-board
             nil
@@ -352,6 +359,10 @@ Modifications:
 
 (defun othello-init ()
     "initialization code for othello"
+    (load 'computer)
+    ;(trace minimax)
+    ;(trace deep-enough)
+    ;(trace end-condition)
     (setf *SIZE* 8)
     (setf *BOARD* (initial-position))
     (setf *RANDOMSTATE* (make-random-state t))
