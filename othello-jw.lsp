@@ -162,6 +162,14 @@ Modifications:
     (not (or (can-move board 'B) (can-move board 'W)))
 )
 
+; Returns true if the board is full (no '-', all B/W)
+(defun board-full (board)
+    (dotimes (i (* *SIZE* *SIZE*))
+        (when (eq (nth i board) '-) (return-from game-over nil))
+    )
+    t
+)
+
 ;================  Can Move  ================
 
 ; Returns true if the given piece has a move for the given board configuration.
@@ -169,7 +177,7 @@ Modifications:
 (defun can-move (board piece)
     (dotimes (i *SIZE*)
         (dotimes (j *SIZE*)
-            (when (valid-move board i j piece) (return-from can-move T))
+            (when (valid-move board i j piece) (return-from can-move t))
         )
     )
     nil

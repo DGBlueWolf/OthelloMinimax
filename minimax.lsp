@@ -12,7 +12,8 @@ Purpose:    A Lisp program which runs minimax with a-b pruning
 Usage:      (minimax state generate-successors eval-state ply)
 
 Change Log:
-    20182303 - Completed basic implementation of the algorithm
+    20180323 - Completed basic implementation of the algorithm
+    20180326 - General debugging (still an issue with node reference)
 |#
 
 ;================ Graph Structure ================
@@ -48,17 +49,23 @@ Change Log:
             )
         ))
 
+        (format t "~%~%>Root (~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%~%" 
+            (if player 'B 'W) ply (node-rank root) (node-alpha root) (node-beta root) (othello-state-move (node-state root)))
+
         ; If we've hit the bottom, set bound to the value of rank and return root
         (when (deep-enough root ply end-condition) (progn
+            
             (if player
                 (setf (node-alpha root) (node-rank root))
                 (setf (node-beta  root) (node-rank root))
             ) 
+
+            (format t "~%>Root (~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%~%" 
+                (if player 'B 'W) ply (node-rank root) (node-alpha root) (node-beta root) (othello-state-move (node-state root)))
+
             (return-from minimax root))
         )
 
-        ;(format t "~%~%>Root (~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%~%" 
-         ;   (if player 'B 'W) ply (node-rank root) (node-alpha root) (node-beta root) (othello-state-move (node-state root)))
         ; Otherwise loop through successors
         (loop for n in
                 ; Sort each generated successor by it's evaluation function
@@ -92,14 +99,11 @@ Change Log:
                     ; If min player update the beta of root with alpha of child
                     (setf (node-beta root) (node-alpha n))
                 )
-
-               ; (format t "~%~%>Root (~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%~%" 
-                ;    (if player 'B 'W) ply (node-rank root) (node-alpha root) (node-beta root) (othello-state-move (node-state root)))
             )
             when (>= (node-alpha root) (node-beta root)) do (return-from minimax root)
         )
-        ;(format t "~%<Root (~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%~%"
-         ;   (if player 'B 'W) ply (node-rank root) (node-alpha root) (node-beta root) (othello-state-move (node-state root)))
+        (format t "~%<Root (~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%~%"
+            (if player 'B 'W) ply (node-rank root) (node-alpha root) (node-beta root) (othello-state-move (node-state root)))
         (return-from minimax root)
     )
 )
