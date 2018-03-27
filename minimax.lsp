@@ -49,20 +49,15 @@ Change Log:
             )
         ))
 
-        (format t "~%~%>Root (~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%~%" 
-            (if player 'B 'W) ply (node-rank root) (node-alpha root) (node-beta root) (othello-state-move (node-state root)))
+        ;(format t ">Root (~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%" 
+            ;(if player 'B 'W) ply (node-rank root) (node-alpha root) (node-beta root) (othello-state-move (node-state root)))
 
         ; If we've hit the bottom, set bound to the value of rank and return root
         (when (deep-enough root ply end-condition) (progn
-            
             (if player
                 (setf (node-alpha root) (node-rank root))
                 (setf (node-beta  root) (node-rank root))
             ) 
-
-            (format t "~%>Root (~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%~%" 
-                (if player 'B 'W) ply (node-rank root) (node-alpha root) (node-beta root) (othello-state-move (node-state root)))
-
             (return-from minimax root))
         )
 
@@ -70,23 +65,26 @@ Change Log:
         (loop for n in
                 ; Sort each generated successor by it's evaluation function
                 (sort 
-                    (copy-seq (loop for move in (funcall move-generator (node-state root))
-                        collecting (make-node
-                            :parent root
-                            :state move
-                            :rank (funcall eval-state move))))
-                    skey
-                )
+                    (copy-seq ; A copy of the move sequence
+                        (loop for move in (funcall move-generator (node-state root))
+                            collecting (make-node
+                                :parent root
+                                :state move
+                                :rank (funcall eval-state move))
+                        )
+                    ) 
+                    skey ; The sorting predicate
+                )  
+
+            ; Result of making recursive call to minimax
             with result = nil
+
             ; Child of max player gets root's current alpha value
             if player
                 do (setf (node-alpha n) (node-alpha root))
             ; Child of min player gets root's current beta value
             else 
                 do (setf (node-beta n) (node-beta root))
-
-            ;do (format t "--> Child(~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%" 
-             ;   (if player 'B 'W) ply (node-rank n) (node-alpha n) (node-beta n) (othello-state-move (node-state n)))
 
             ; Make a recursive call and update best if necessary
             do (setf result (minimax n (not player) move-generator eval-state end-condition (1- ply)))   
@@ -102,8 +100,6 @@ Change Log:
             )
             when (>= (node-alpha root) (node-beta root)) do (return-from minimax root)
         )
-        (format t "~%<Root (~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%~%"
-            (if player 'B 'W) ply (node-rank root) (node-alpha root) (node-beta root) (othello-state-move (node-state root)))
         (return-from minimax root)
     )
 )

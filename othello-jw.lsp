@@ -58,7 +58,9 @@ Modifications:
                             ; get move from player
                             ; (setf move (player-move board 'B))
                             ; OR select move randomly
-                            (setf move (nth (random (length moves) *RANDOMSTATE*) moves))
+                            ; (setf move (nth (random (length moves) *RANDOMSTATE*) moves))
+                            ; OR use minimax
+                            (setf move (computer-move board 'B 4 'weighted-eval-state))
                             (setf row (first move) col (second move))
                             (format t "Selected move: ~a ~a~%~%" row col)
                             (setf board (valid-move board (1- row) (1- col) 'B))
@@ -80,10 +82,10 @@ Modifications:
                             (dolist (move moves) (format t " ~a" move))
                             (format t "~%")
                             ; get move from player
-                            ; (setf move (player-move board 'W))
+                            (setf move (player-move board 'W))
                             ; OR select move randomly
                             ; (setf move (nth (random (length moves) *RANDOMSTATE*) moves))
-                            (setf move (computer-move board 'W 3 'random-eval-state))
+                            ; (setf move (computer-move board 'W 3 'weighted-eval-state))
                             (setf row (first move) col (second move))
                             (format t "Selected move: ~a ~a~%~%" row col)
                             (setf board (valid-move board (1- row) (1- col) 'W))
