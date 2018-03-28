@@ -300,6 +300,41 @@ Modifications:
     )
 )
 
+;================  Valid Move P  ================
+(defun valid-move-p (board row col piece)
+    (let 
+        (
+            (position (+ (* row *size*) col))
+            (new-board (copy-list board))
+        )
+        
+        ; check that the position is empty
+        (if (not (eq (nth position board) '-)) (return-from valid-move nil))
+
+        ; place a piece in the position
+        (setf (nth position new-board) piece)
+
+        ; try to flip pieces in the various directions
+        ; if flipping pieces was successful in some direction,
+        ; then return the new board; otherwise return nil
+        ; @weiss We want to try and flip pieces in all directions, or -> some
+        (if
+            (or 
+                (flip-pieces new-board position piece 1 0)
+                (flip-pieces new-board position piece -1 0)
+                (flip-pieces new-board position piece *SIZE* 0)
+                (flip-pieces new-board position piece (- *SIZE*) 0)
+                (flip-pieces new-board position piece (- (1+ *SIZE*)) 0)
+                (flip-pieces new-board position piece (- 1 *SIZE*) 0)
+                (flip-pieces new-board position piece (1- *SIZE*) 0)
+                (flip-pieces new-board position piece (1+ *SIZE*) 0)
+            )
+            t
+            nil
+        )
+    )
+)
+
 ;================  Flip Pieces  ================
 
 ; Recursive function for flipping pieces.

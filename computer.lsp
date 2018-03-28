@@ -15,7 +15,6 @@ Change Log:
 
 ;================ Imports ================
 (load 'minimax)
-;(load 'othello-jw)
 
 ;================ Game State ================
 (defstruct othello-state 
@@ -113,4 +112,21 @@ Change Log:
 )
 
 (defun mobility-stability (state) 
-    (loop for move in (move-generator state))
+    (let (  
+            (maxmoves 
+                (loop for move in (generate-successors (othello-state-board state) 'B) 
+                    collecting move
+                )
+            )
+            (minmoves 
+                (loop for move in (generate-successors (othello-state-board state) 'W) 
+                    collecting move
+                )
+            )
+            (mobility 0)
+            (stability 0)
+        )
+        (when (/= (length maxmoves) (length minmoves)) 
+            (setf mobility (/ (float (- maxmoves minmoves)) (+ maxmoves minmoves)))      
+        )
+    )
