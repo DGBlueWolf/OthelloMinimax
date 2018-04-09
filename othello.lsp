@@ -20,6 +20,8 @@ Modifications:
     Line 270 (in valid-move): or -> some 
 
 180326 - @Noah Added computer run to game loop
+
+180407 - @Noah Added to interaction to match assignment document
 |#
 
 ;================  Global Constants ================
@@ -440,9 +442,18 @@ Modifications:
     move
 )
 
-;================
+;================ Check command line arguments ==============
 
-(when (> (length *args*) 2)
-    (format t "Error: Too many arguments to `othello`.~%Usage:~%    $ othello [B/W] [ply]~%    - `ply` is an integer.~%"))
+(when 
+    (or 
+        (> (length *args*) 2) 
+        (and 
+            (>= (length *args*) 1) 
+            (equal (read-from-string (car *args*)) 'help)
+        ) 
+    )
+    (format t "Error: Too many arguments to `othello`.~%Usage:~%    $ othello [B/W] [ply]~%    - `ply` is an integer.~%")
+)
+
     
 (apply #'othello (map 'list #'read-from-string *args*))
