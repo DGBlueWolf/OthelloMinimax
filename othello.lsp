@@ -436,7 +436,7 @@ Modifications:
 (defun make-move (position player depth)
     "make move in given position, returns (row col)"
     (if (can-move position player)
-        (setf move (computer-move position player depth heuristic))
+        (setf move (computer-move position player depth 'fancy-eval-state))
         (format t "~%Player ~A cannot move" player)
     )
     move

@@ -27,6 +27,27 @@ Change Log:
 )
 
 ;================ Minimax ===============
+; This function runs minimax with alpha-beta pruning using a best first traversal
+;
+; It uses a doubly linked list (which admittedly doesn't lend itself to be printed in CLISP) to
+; store the best path.
+;
+; It works by checking whether the start state is `deep-enough` (no ply, pruned, or game end).
+; If not, it uses generate-successors to generate a list of successor states.
+; The successor states are processed recursively in sorted order of their evaluation function with the toggled player.
+; During processing either alpha or beta is updated as each is processed according to whether the current player
+; is MAX or MIN (player = T or player = nil). The best-child is updated at the same time.
+;
+; The root node with the best-child set is returned by the alorithm.
+; 
+; Parameters:
+;      state            - The start state
+;      player [T/nil]   - Whether the current player is the max player
+;      move-generaotr   - A function which takes state as an argument and returns a list of possible result states
+;      eval-state       - A function which takes state and returns a `single-float` value
+;      end-condition    - A function which takes state and returns whether the game has ended or not
+;      ply [int]        - The maximum recursion depth of the minimax algorithm (how many game-steps to look into the future) 
+;
 (defun minimax (state player move-generator eval-state end-condition ply)
     ; Initialize local variables
     (let*
@@ -87,7 +108,23 @@ Change Log:
                 do (setf (node-beta n) (node-beta root))
 
             ; Make a recursive call and update best if necessary
-            do (setf result (minimax n (not player) move-generator eval-state end-condition (1- ply)))   
+            do (setf result (minimax n (not player) move-generator eval-state end-condition (1- ply)))
+
+            ; DEBUGGING
+            ;(format t "Player: ~:[Min~;Max~] Ply: ~A ::: Curr: Alpha: ~13@A Beta: ~13@A~%" 
+            ;    (not player) 
+            ;    (1- ply) 
+            ;    (node-alpha result) 
+            ;    (node-beta result)
+            ;)
+            ;(format t "Player: ~:[Min~;Max~] Ply: ~A ::: Best: Alpha: ~13@A Beta: ~13@A~2%" 
+            ;    (not player) 
+            ;    (1- ply) 
+            ;    (when (node-best-child root) (node-alpha (node-best-child root)))
+            ;    (when (node-best-child root) (node-beta  (node-best-child root)))
+            ;)
+
+            ; Update when the result is better than roots current best value
             when (funcall nkey root result) do (progn 
                 (setf (node-best-child root) n)
             
@@ -105,6 +142,12 @@ Change Log:
 )
 
 ;================ Deep-Enough ================
+; This function determines when we've gone deep enough. 
+; This happens 
+;       when we run out of ply, 
+;       when alpha > beta indicating a pruned branch, or
+;       when we reach the game's end condition.
+
 (defun deep-enough (root ply end-condition) 
     (or 
         (<= ply 0) ; Out of ply
