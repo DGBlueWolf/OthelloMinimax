@@ -28,86 +28,97 @@ Modifications:
 (defvar *BOARD*)        ; board representation (list)
 (defvar *RANDOMSTATE*)  ; random number generator state
 
+;================  Dependency  =====================
+
+(load 'computer)
+
 ;================  Othello  ================
 
-(defun othello ( )
+(defun othello (&optional (piece nil) (ply 4))
     ; call the init function:
     ;   sets board dimensions to 8x8 (*SIZE*)
     ;   stores initial position (*BOARD*)
     ;   initializes random number generator (*RANDOMSTATE*)
-    (othello-init)
+    (do ((choice 'y))
+        ((equal choice 'n) (format t "Thanks for playing!")) ; exit when they chose to quit
+        (othello-init)
+        (when (not piece) (progn (format t "Would you like to move first [y/n]? ")
+            (if (equal (read) 'n) (setf piece 'w) (setf piece 'b))))
 
-    ; local vars
-    (let ( (board *BOARD*) (two-players t) moves move row col)
+        (format t "~%OK! You will be playing ~:[White~;Black~]~:*. When asked for your move, please enter the row 
+    and column in which you would like to place a ~:[White~;Black~]~:* stone. Remember, you must 
+    outflank at least one ~:[Black~;White~] stone, or forfeit your move.~2%" (equal piece 'b))
+        ; local vars
 
-        ; begin play
-        (print-board board)
-        (do ()
-            ((game-over board) (format t "~%Game over!~%"))    ; exit when game over
+        (let ( (board *BOARD*) (two-players t) moves move row col)
 
-            ; move for player 1
-            ; to do: add minimax for computer opponent
-            (cond
-                (two-players
-                    (setf moves (generate-moves board 'B))
-                    (cond
-                        (moves
-                            (format t "~%Valid moves for Black:")
-                            (dolist (move moves) (format t " ~a" move))
-                            (format t "~%")
-                            ; get move from player
-                            ; (setf move (player-move board 'B))
-                            ; OR select move randomly
-                            ; (setf move (nth (random (length moves) *RANDOMSTATE*) moves))
-                            ; OR use minimax
-                            (setf move (computer-move board 'B 4 'weighted-eval-state))
-                            (setf row (first move) col (second move))
-                            (format t "Selected move: ~a ~a~%~%" row col)
-                            (setf board (valid-move board (1- row) (1- col) 'B))
+            ; begin play
+            (print-board board)
+            (do ()
+                ((game-over board) (format t "~%Game over!~%")) ; exit when game over
+
+                ; move for player 1
+                ; to do: add minimax for computer opponent
+                (cond
+                    (two-players
+                        (setf moves (generate-moves board 'B))
+                        (cond
+                            (moves
+                                (format t "~%Valid moves for Black:")
+                                (dolist (move moves) (format t " ~a" move))
+                                (format t "~%")
+                                (setf move (if (equal piece 'B) 
+                                    (player-move board 'B)
+                                    (computer-move board 'B ply 'fancy-eval-state)
+                                ))
+                                (setf row (first move) col (second move))
+                                (format t "Selected move: ~a ~a~%~%" row col)
+                                (setf board (valid-move board (1- row) (1- col) 'B))
+                            )
+                            (t (format t "~%Black cannot move!~%~%"))
                         )
-                        (t (format t "~%Black cannot move!~%~%"))
                     )
                 )
-            )
-            (print-board board)
+                (print-board board)
 
-            ; move for player 2
-            ; to do: add minimax for computer opponent
-            (cond
-                (two-players
-                    (setf moves (generate-moves board 'W))
-                    (cond
-                        (moves
-                            (format t "~%Valid moves for White:")
-                            (dolist (move moves) (format t " ~a" move))
-                            (format t "~%")
-                            ; get move from player
-                            (setf move (player-move board 'W))
-                            ; OR select move randomly
-                            ; (setf move (nth (random (length moves) *RANDOMSTATE*) moves))
-                            ; (setf move (computer-move board 'W 3 'weighted-eval-state))
-                            (setf row (first move) col (second move))
-                            (format t "Selected move: ~a ~a~%~%" row col)
-                            (setf board (valid-move board (1- row) (1- col) 'W))
+                ; move for player 2
+                ; to do: add minimax for computer opponent
+                (cond
+                    (two-players
+                        (setf moves (generate-moves board 'W))
+                        (cond
+                            (moves
+                                (format t "~%Valid moves for White:")
+                                (dolist (move moves) (format t " ~a" move))
+                                (format t "~%")
+                                (setf move (if (equal piece 'W) 
+                                    (player-move board 'W)
+                                    (computer-move board 'W ply 'fancy-eval-state)
+                                ))
+                                (setf row (first move) col (second move))
+                                (format t "Selected move: ~a ~a~%~%" row col)
+                                (setf board (valid-move board (1- row) (1- col) 'W))
+                            )
+                            (t (format t "~%White cannot move!~%~%"))
                         )
-                        (t (format t "~%White cannot move!~%~%"))
                     )
                 )
+                (print-board board)
             )
-            (print-board board)
-        )
 
-        ; output the results
-        (setf score (count-pieces board))
-        (format t "Score: Black ~a, White ~a~%" (car score) (cadr score))
-        (cond
-            ((> (car score) (cadr score)) (format t "Black wins!~%"))
-            ((< (car score) (cadr score)) (format t "White wins!~%"))
-            (t (format t "Tie game!~%"))
+            ; output the results
+            (setf score (count-pieces board))
+            (format t "Score: Black ~a, White ~a~%" (car score) (cadr score))
+            (cond
+                ((> (car score) (cadr score)) (format t "Black wins!~%"))
+                ((< (car score) (cadr score)) (format t "White wins!~%"))
+                (t (format t "Tie game!~%"))
+            )
         )
+        (format t "Play again [y/n]? ")
+        (setf choice (read))
     )
-
-    "Thanks for playing!"
+    (values)
 )
 
 ;================  initialize board  ================
@@ -404,13 +415,20 @@ Modifications:
 
 (defun othello-init ()
     "initialization code for othello"
-    (load 'computer)
-    ;(trace minimax)
-    ;(trace deep-enough)
-    ;(trace end-condition)
     (setf *SIZE* 8)
     (setf *BOARD* (initial-position))
     (setf *RANDOMSTATE* (make-random-state t))
+    (setf *static-weights* 
+        '(32  2  4  4  4  4  2 32
+           2  0  1  1  1  1  0  2
+           4  1  4  2  2  4  1  4
+           4  1  2  8  8  2  1  4
+           4  1  2  8  8  2  1  4
+           4  1  4  2  2  4  1  4
+           2  0  1  1  1  1  0  2
+          32  2  4  4  4  4  2 32)
+    )
+    (setf *stable-squares* (make-array (list (* *size* *size*))))
 )
 
 (defun make-move (position player depth)
@@ -424,4 +442,7 @@ Modifications:
 
 ;================
 
-(othello)
+(when (> (length *args*) 2)
+    (format t "Error: Too many arguments to `othello`.~%Usage:~%    $ othello [B/W] [ply]~%    - `ply` is an integer.~%"))
+    
+(apply #'othello (map 'list #'read-from-string *args*))
