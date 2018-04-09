@@ -79,6 +79,80 @@ Change Log:
     )
 )
 
+(defmacro traverse-board (&key (idx 'idx) outer-let inner-let body ending)
+    (let ((i (gensym))
+          (j (gensym)))
+        `(let (,@outer-let)
+            ; from top diagonally down to the left
+            (loop for ,i from 0 below *size*
+                do (let (,@inner-let)
+                    (loop for ,j from 0 below (1+ ,i)
+                        do (let ((,idx (+ ,i (* (1- *size*) ,j))))
+                            ,@body
+                        )
+                        finally (progn ,@ending)
+                    )
+                )
+            )
+            ; from right digonally down to the bottom
+            (loop for ,i from 1 below *size* 
+                do (let (,@inner-let)
+                    (loop for ,j from 0 below (- *size* ,i) 
+                        do (let ((,idx (+ 7 (* ,i *size*) (* (1- *size*) ,j))))
+                            ,@body
+                        )
+                        finally (progn ,@ending)
+                    )
+                )   
+            )
+            ; iterate from left hand side diagonally down
+            (loop for ,i from (1- *size*) downto 1
+                do (let (,@inner-let)
+                    (loop for ,j from 0 below (- *size* ,i)
+                        do (let ((,idx (+ (* ,i *size*) (* (1+ *size*) ,j))))
+                            ,@body
+                        )
+                        finally (progn ,@ending)
+                    )
+                )
+            )
+            ; iterate from the top diagonally down
+            (loop for ,i from 0 below *size* 
+                do (let (,@inner-let)
+                    (loop for ,j from 0 below (- *size* ,i) 
+                        do (let ((,idx (+ ,i (* (1+ *size*) ,j))))
+                            ,@body
+                        )
+                        finally (progn ,@ending)
+                    )
+                )   
+            )
+            ; iterate over rows
+            (loop for ,i from 0 below *size*
+                do (let (,@inner-let)
+                    (loop for ,j from 0 below *size*
+                        do (let ((,idx (+ (* ,i *size*) ,j)))
+                            ,@body
+                        )
+                        finally (progn ,@ending)
+                    )
+                )
+            )
+            ; iterate over cols
+            (loop for ,i from 0 below *size*
+                do (let (,@inner-let)
+                    (loop for ,j from 0 below *size*
+                        do (let ((,idx (+ (* ,j *size*) ,i)))
+                            ,@body
+                        )
+                        finally (progn ,@ending)
+                    )
+                )
+            )
+        )
+    )
+)
+
 ;================  Global Variables  ================
 
 (defvar *static-weights* 
