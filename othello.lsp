@@ -35,7 +35,13 @@ Modifications:
 (load 'computer)
 
 ;================  Othello  ================
-
+; The main function of this file, it whips up a game of othello
+; optionally taking the piece to play as and the number of ply for the computer's
+; minimax algorithm.
+; 
+; If the user doesn't specify the piece, the program with ask them whether they'd 
+; like to go first or not.
+;
 (defun othello (&optional (piece nil) (ply 4))
     ; call the init function:
     ;   sets board dimensions to 8x8 (*SIZE*)
@@ -51,7 +57,6 @@ Modifications:
     and column in which you would like to place a ~:[White~;Black~]~:* stone. Remember, you must 
     outflank at least one ~:[Black~;White~] stone, or forfeit your move.~2%" (equal piece 'b))
         ; local vars
-
         (let ( (board *BOARD*) (two-players t) moves move row col)
 
             ; begin play
@@ -60,7 +65,6 @@ Modifications:
                 ((game-over board) (format t "~%Game over!~%")) ; exit when game over
 
                 ; move for player 1
-                ; to do: add minimax for computer opponent
                 (cond
                     (two-players
                         (setf moves (generate-moves board 'B))
@@ -84,7 +88,6 @@ Modifications:
                 (print-board board)
 
                 ; move for player 2
-                ; to do: add minimax for computer opponent
                 (cond
                     (two-players
                         (setf moves (generate-moves board 'W))
@@ -117,7 +120,7 @@ Modifications:
                 (t (format t "Tie game!~%"))
             )
         )
-        (format t "Play again [y/n]? ")
+        (format t "~%Play again [y/n]? ")
         (setf choice (read))
     )
     (values)
@@ -430,8 +433,9 @@ Modifications:
            2  0  1  1  1  1  0  2
           32  2  4  4  4  4  2 32)
     )
-    (setf *stable-squares* (make-array (list (* *size* *size*))))
 )
+
+;================ Function to make the tournament mode work =================
 
 (defun make-move (position player depth)
     "make move in given position, returns (row col)"
@@ -443,16 +447,18 @@ Modifications:
 )
 
 ;================ Check command line arguments ==============
-
 (when 
     (or 
         (> (length *args*) 2) 
         (and 
-            (>= (length *args*) 1) 
+            (= (length *args*) 1) 
             (equal (read-from-string (car *args*)) 'help)
         ) 
     )
-    (format t "Error: Too many arguments to `othello`.~%Usage:~%    $ othello [B/W] [ply]~%    - `ply` is an integer.~%")
+    (progn 
+        (format t "Usage:~%    $ othello [B/W] [ply]~2%        - `ply` is an integer.~2%")
+        (exit)
+    )
 )
 
     

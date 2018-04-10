@@ -17,135 +17,97 @@ Change Log:
 
 (load 'minimax)
 
-;================  Initializers  ====================
-
-(defmacro forward-diagonal-loop (&key (idx 'idx) outer-let inner-let body ending) 
+;================  Traversal  ====================
+; This macro creates a loop that traverses the board in each of the 4 flipping directions
+; This is useful when computing stability
+;
+; It uses idx by default as the board index and ridx as the row index for a given direction
+;
+(defmacro traverse-board (&key (idx 'idx) (ridx 'ridx) backward-let forward-let row-let col-let inner-let body ending)
     (let ((i (gensym))
           (j (gensym)))
-        `(let (,@outer-let)
-            ; from top diagonally down to the left
-            (loop for ,i from 0 below *size*
-                do (let (,@inner-let)
-                    (loop for ,j from 0 below (1+ ,i)
-                        do (let ((,idx (+ ,i (* (1- *size*) ,j))))
-                            ,@body
+        `(progn 
+            ; init variables for the forward diagonal
+            (let (,@forward-let)
+                ; from top diagonally down to the left
+                (loop for ,i from 0 below *size*
+                    do (let (,idx (,ridx ,i) ,@inner-let)
+                        (loop for ,j from 0 below (1+ ,i)
+                            do (progn
+                                (setf ,idx (+ ,i (* (1- *size*) ,j)))
+                                ,@body
+                            )
+                            finally (progn ,@ending)
                         )
-                        finally (progn ,@ending)
+                    )
+                )
+                ; from right digonally down to the bottom
+                (loop for ,i from 1 below *size* 
+                    do (let (,idx (,ridx (+ ,i *size* -1)) ,@inner-let)
+                        (loop for ,j from 0 below (- *size* ,i) 
+                            do (progn 
+                                (setf ,idx (+ 7 (* ,i *size*) (* (1- *size*) ,j)))
+                                ,@body
+                            )
+                            finally (progn ,@ending)
+                        )
+                    )   
+                )
+            )
+            ; init variables for the backward diagonal
+            (let (,@backward-let)
+                ; iterate from left hand side diagonally down
+                (loop for ,i from (1- *size*) downto 1
+                    do (let (,idx (,ridx (- *size* ,i 1)) ,@inner-let)
+                        (loop for ,j from 0 below (- *size* ,i)
+                            do (progn 
+                                (setf ,idx (+ (* ,i *size*) (* (1+ *size*) ,j)))
+                                ,@body
+                            )
+                            finally (progn ,@ending)
+                        )
+                    )
+                )
+                ; iterate from the top diagonally down
+                (loop for ,i from 0 below *size* 
+                    do (let (,idx (,ridx (+ ,i *size* -1)) ,@inner-let)
+                        (loop for ,j from 0 below (- *size* ,i) 
+                            do (progn 
+                                (setf ,idx (+ ,i (* (1+ *size*) ,j)))    
+                                ,@body
+                            )
+                            finally (progn ,@ending)
+                        )
+                    )   
+                )
+            )
+            ; init variables for the row
+            (let (,@row-let)
+                ; iterate over rows
+                (loop for ,i from 0 below *size*
+                    do (let (,idx (,ridx ,i) ,@inner-let)
+                        (loop for ,j from 0 below *size*
+                            do (progn 
+                                (setf ,idx (+ (* ,i *size*) ,j))
+                                ,@body
+                            )
+                            finally (progn ,@ending)
+                        )
                     )
                 )
             )
-            ; from right digonally down to the bottom
-            (loop for ,i from 1 below *size* 
-                do (let (,@inner-let)
-                    (loop for ,j from 0 below (- *size* ,i) 
-                        do (let ((,idx (+ 7 (* ,i *size*) (* (1- *size*) ,j))))
-                            ,@body
+            ; init variables for the column
+            (let (,@col-let)
+                ; iterate over cols
+                (loop for ,i from 0 below *size*
+                    do (let (,idx (,ridx ,i) ,@inner-let)
+                        (loop for ,j from 0 below *size*
+                            do (progn 
+                                (setf ,idx (+ (* ,j *size*) ,i))
+                                ,@body
+                            )
+                            finally (progn ,@ending)
                         )
-                        finally (progn ,@ending)
-                    )
-                )   
-            )
-        )
-    )
-)
-
-(defmacro backward-diagonal-loop (&key (idx 'idx) outer-let inner-let body ending) 
-    (let ((i (gensym))
-          (j (gensym)))
-        `(let (,@outer-let)
-            ; iterate from left hand side diagonally down
-            (loop for ,i from (1- *size*) downto 1
-                do (let (,@inner-let)
-                    (loop for ,j from 0 below (- *size* ,i)
-                        do (let ((,idx (+ (* ,i *size*) (* (1+ *size*) ,j))))
-                            ,@body
-                        )
-                        finally (progn ,@ending)
-                    )
-                )
-            )
-            ; iterate from the top diagonally down
-            (loop for ,i from 0 below *size* 
-                do (let (,@inner-let)
-                    (loop for ,j from 0 below (- *size* ,i) 
-                        do (let ((,idx (+ ,i (* (1+ *size*) ,j))))
-                            ,@body
-                        )
-                        finally (progn ,@ending)
-                    )
-                )   
-            )
-        )
-    )
-)
-
-(defmacro traverse-board (&key (idx 'idx) outer-let inner-let body ending)
-    (let ((i (gensym))
-          (j (gensym)))
-        `(let (,@outer-let)
-            ; from top diagonally down to the left
-            (loop for ,i from 0 below *size*
-                do (let (,@inner-let)
-                    (loop for ,j from 0 below (1+ ,i)
-                        do (let ((,idx (+ ,i (* (1- *size*) ,j))))
-                            ,@body
-                        )
-                        finally (progn ,@ending)
-                    )
-                )
-            )
-            ; from right digonally down to the bottom
-            (loop for ,i from 1 below *size* 
-                do (let (,@inner-let)
-                    (loop for ,j from 0 below (- *size* ,i) 
-                        do (let ((,idx (+ 7 (* ,i *size*) (* (1- *size*) ,j))))
-                            ,@body
-                        )
-                        finally (progn ,@ending)
-                    )
-                )   
-            )
-            ; iterate from left hand side diagonally down
-            (loop for ,i from (1- *size*) downto 1
-                do (let (,@inner-let)
-                    (loop for ,j from 0 below (- *size* ,i)
-                        do (let ((,idx (+ (* ,i *size*) (* (1+ *size*) ,j))))
-                            ,@body
-                        )
-                        finally (progn ,@ending)
-                    )
-                )
-            )
-            ; iterate from the top diagonally down
-            (loop for ,i from 0 below *size* 
-                do (let (,@inner-let)
-                    (loop for ,j from 0 below (- *size* ,i) 
-                        do (let ((,idx (+ ,i (* (1+ *size*) ,j))))
-                            ,@body
-                        )
-                        finally (progn ,@ending)
-                    )
-                )   
-            )
-            ; iterate over rows
-            (loop for ,i from 0 below *size*
-                do (let (,@inner-let)
-                    (loop for ,j from 0 below *size*
-                        do (let ((,idx (+ (* ,i *size*) ,j)))
-                            ,@body
-                        )
-                        finally (progn ,@ending)
-                    )
-                )
-            )
-            ; iterate over cols
-            (loop for ,i from 0 below *size*
-                do (let (,@inner-let)
-                    (loop for ,j from 0 below *size*
-                        do (let ((,idx (+ (* ,j *size*) ,i)))
-                            ,@body
-                        )
-                        finally (progn ,@ending)
                     )
                 )
             )
@@ -165,7 +127,6 @@ Change Log:
        2  0  1  1  1  1  0  2
       32  2  4  4  4  4  2 32)
 )
-(defvar *previous-player-mobility* 0)
 
 ;================  Game State  ======================
 
@@ -176,14 +137,17 @@ Change Log:
 )
 
 ;================ Minimax Functions ================
+
+; defines when the gave is over
 (defun end-condition (state)
     (game-over (othello-state-board state))
 )
 
+; generates the next set of moves
 (defun move-generator (state)
     (or 
         ;Gets a list of possible moves
-        (loop for position from 0 to (1- (* *size* *size*))
+        (loop for position from 0 below (* *size* *size*)
             when (p-valid-move (othello-state-board state) position (othello-state-piece state)) collect it
         )
         ; If no moves are possible, it returns list with one element,
@@ -196,6 +160,7 @@ Change Log:
     )
 )
 
+; checks if a move is possible and returns the result of the move if so
 (defun p-valid-move (board position piece)
     (let* ((row (1+ (floor position *size*))
           )(col (1+ (mod position *size*))
@@ -210,11 +175,13 @@ Change Log:
     ) 
 )
 
+; sets up the function call to minimax for the othello game configuration
 (defun othello-minimax (state player eval-state ply) 
     (othello-state-move (node-state (node-best-child 
         (minimax state player #'move-generator eval-state #'end-condition ply))))
 )
 
+; sets up the function call for the computers move to interface with the game
 (defun computer-move (board player depth heuristic)
     (othello-minimax 
         (make-othello-state 
@@ -229,12 +196,15 @@ Change Log:
 )
 
 ;================ Heuristics ================
+; Just generates a random number for variety, similar to a random player
 (defun random-eval-state (state) (random 3.0))
 
+; The simple eval state is the difference between the number of black coins and the number of white coins
 (defun simple-eval-state (state) 
     (float (apply #'- (count-pieces (othello-state-board state))))
 )
 
+; The weighted eval state assigns values to a piece at each board position (not a great strategy)
 (defun weighted-eval-state (state) 
     (float (loop for w in *static-weights*
                  for piece in (othello-state-board state)
@@ -243,9 +213,7 @@ Change Log:
     ))
 )
 
-; ref: Othello Heuristics @Kartik Kukreja 
-; https://kartikkukreja.wordpress.com/2013/03/30/heuristic-function-for-reversiothello/
-
+; Gets the number of moves for each player in the given state
 (defun mobility (state) 
     (let (  
             (maxmoves 
@@ -263,44 +231,126 @@ Change Log:
     )
 )
 
+; A complicated function that counts the difference between the number of stable coins for
+; black and the number of stable coins for white. A stable coin is one that cannot be
+; flipped again for the rest of the game
 (defun stability (state)
     (let (
-            (stable (make-array (list (* *size* *size*))))
-            (board (make-array (list (* *size* *size*)) :initial-contents (othello-state-board state)))
+            witnesses  ; pieces that are stable and can generate new candidates
+            (stable (make-array `(,(* *size* *size*))))
+            (row-full (make-array `(,*size*)))
+            (col-full (make-array `(,*size*)))
+            (for-full (make-array `(,(+ *size* *size* -1))))
+            (bak-full (make-array `(,(+ *size* *size* -1))))
+            (stab-full (make-array `(,(* *size* *size*) 4)))
+            (board (make-array `(,(* *size* *size*)) :initial-contents (othello-state-board state)))
         )
-        (loop for idx in (sort 
-                (loop for i from 0 below (* *size* *size*) collecting i) 
-                (lambda (a b) (> (centerdist a) (centerdist b)))) ; end sort
-            do (print idx)
-            when (and 
-                    (not (equal (aref board idx) '-)) ;piece isn't blank
-                    ; Finds connected groups of stable pieces
-                    (loop for dir in '((0 1) (1 0) (1 1) (-1 1)) ; for each direction around it
-                        do (print dir)
-                        when (cond
-                            ((< (- (mod idx *size*) (abs (car dir))) 0) (progn (print 'left) nil)) ; out of bounds left
-                            ((< (- (floor idx *size*) (cadr dir)) 0) (progn (print 'top) nil)) ; out of bounds top
-                            ((>= (+ (mod idx *size*) (abs (car dir))) *size*) (progn (print 'right) nil)) ; out of bounds right
-                            ((>= (+ (floor idx *size*) (cadr dir)) *size*) (progn (print 'bottom) nil)) ; out of bounds bottom
-                            ((equal (aref board idx) ; matching stable piece in negative direction
-                                    (aref stable (- idx (car dir) (* *size* (cadr dir))))) (progn (print dir) nil))
-                            ((equal (aref board idx) ; matching stable piece in positive direction
-                                    (aref stable (+ idx (car dir) (* *size* (cadr dir))))) (progn (print dir) nil))
-                            (t t)
-                        ) do (return nil)
-                        finally (return (progn (print idx) t))
-                    ) 
-            ; if the when condition is satisfied, the piece is stable add it to the stable list
-            ; and add to the score, 1 or 'B and -1 for 'W
-            ) do (progn (print "setting stable") (setf (aref stable idx) (aref board idx))) and sum (if (equal (aref board idx) 'B) 1 -1) 
-        ) ; end loop
+        ; check if rows and columns are full
+        (traverse-board 
+            :backward-let ((row-ref bak-full))
+            :forward-let  ((row-ref for-full))
+            :row-let      ((row-ref row-full))
+            :col-let      ((row-ref col-full))
+
+            :body       ((when (equal (aref board idx) '-) (return nil)))
+            :ending     ((setf (aref row-ref ridx) t))
+        )
+        ; for the rows and columns that are full set the stab-full for each element
+        ; also set stab full for edge pieces
+        (traverse-board
+            :backward-let ((row-idx 0) (row-ref bak-full))
+            :forward-let  ((row-idx 1) (row-ref for-full))
+            :row-let      ((row-idx 2) (row-ref row-full))
+            :col-let      ((row-idx 3) (row-ref col-full))
+            :inner-let    ((edge-flag t))
+
+            :body       (
+                ; if it's an edge piece it is stable in that direction
+                (when (and (not (equal (aref board idx) '-)) edge-flag) (setf (aref stab-full idx row-idx) t))
+                (setf edge-flag nil) ; no longer an edge piece
+                ; piece is stable in the given direction if the row is full in that direction
+                (when (aref row-ref ridx) (setf (aref stab-full idx row-idx) t))
+            )
+            :ending     (
+                ; last index could be an edge piece
+                (when (not (equal (aref board idx) '-)) (setf (aref stab-full idx row-idx) t))
+            )
+        )
+        (setf witnesses (loop for idx from 0 below (* *size* *size*)
+            when (and (aref stab-full idx 0) 
+                      (aref stab-full idx 1)
+                      (aref stab-full idx 2)
+                      (aref stab-full idx 3)) 
+                do (setf (aref stable idx) (aref board idx)) 
+                and collect idx
+        ))
+        (do ((candidates (gen-candidates board witnesses stab-full) (gen-candidates board witnesses stab-full)))
+            ((not candidates))
+            (setf witnesses (loop for idx in candidates 
+                when (and (aref stab-full idx 0) 
+                          (aref stab-full idx 1)
+                          (aref stab-full idx 2)
+                          (aref stab-full idx 3)) 
+                    do (setf (aref stable idx) (aref board idx)) 
+                    and collect idx
+            ))
+        )
+
     )
 )
 
+; A piece neighboring a stable piece of the same color is stable in that direction and could potentially be a stable piece itself
+(defun gen-candidates (witnesses board stab-full)
+    (loop for idx in witnesses with ndx = nil
+        do (setf ndx (- idx 1)) ; go left direction = 2 (row)
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+            do (setf (aref stab-full ndx 2) t) and collect ndx
+    
+        do (setf ndx (+ idx 1)) ; go right direction = 2 (row)
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+            do (setf (aref stab-full ndx 2) t) and collect ndx
+
+        do (setf ndx (- idx *size*)) ; go up direction = 3 (col)
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+            do (setf (aref stab-full ndx 3) t) and collect ndx
+
+        do (setf ndx (+ idx *size*)) ; go up direction = 3 (col)
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+            do (setf (aref stab-full ndx 3) t) and collect ndx
+
+        do (setf ndx (- idx *size* 1)) ; go NW direction = 0 (bak)
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+            do (setf (aref stab-full ndx 0) t) and collect ndx
+        
+        do (setf ndx (+ idx *size* 1)) ; go SE direction = 0 (bak)
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+            do (setf (aref stab-full ndx 0) t) and collect ndx
+
+        do (setf ndx (- idx *size* -1)) ; go NE direction = 1 (for)
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+            do (setf (aref stab-full ndx 1) t) and collect ndx
+
+        do (setf ndx (+ idx *size* -1)) ; go SW direction = 1 (for)
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+            do (setf (aref stab-full ndx 1) t) and collect ndx
+    )
+)
+
+(defun in-bounds (position next-pos)
+    (cond 
+        ((< next-pos 0) nil)
+        ((> next-pos (* *SIZE* *SIZE*)) nil)
+        ((and (= (1- *SIZE*) (mod position *SIZE*)) (= 0 (mod next-pos *SIZE*))) nil)
+        ((and (= 0 (mod position *SIZE*)) (= (1- *SIZE*) (mod next-pos *SIZE*))) nil)
+        (t t)
+    )
+)
+
+
 (defun fancy-eval-state (state) 
     (+ (weighted-eval-state state) 
-        (* 16.0 (mobility state))
-        ;(* 8.0 (stability state))
+        (* 20.0 (mobility state))
+        ;(progn (print (stability state)) 0.0)
     )
 )
 
