@@ -381,6 +381,7 @@ Change Log:
     )
 )
 
+; More or less random weights on the different more difficult heuristics
 (defun fancy-eval-state (state)
     (let ((it-bd (internal-boundary state)))
         (+  
