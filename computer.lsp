@@ -217,12 +217,12 @@ Change Log:
 (defun mobility (state) 
     (let (  
             (maxmoves 
-                (loop for move in (generate-successors (othello-state-board state) 'B) 
+                (loop for move in (generate-moves-quicker (othello-state-board state) 'B) 
                     collecting move
                 )
             )
             (minmoves 
-                (loop for move in (generate-successors (othello-state-board state) 'W) 
+                (loop for move in (generate-moves-quicker (othello-state-board state) 'W) 
                     collecting move
                 )
             )
@@ -346,11 +346,50 @@ Change Log:
     )
 )
 
+; A function that finds all the internal pieces and boundary pieces
+; An internal piece is one such that there is no blank on its border, opposite is true for 
+; a boundary piece
+(defun internal-boundary (state)
+    (let (
+            (internal 0)
+            (boundary 0)
+            (board (make-array `(,(* *size* *size*)) :initial-contents (othello-state-board state)))
+        )
+        (loop for idx from 0 below (* *size* *size*)
+            when (not (equal (aref board idx) '-))
+                do (loop for ndx in `(
+                                ,(- idx 1)
+                                ,(+ idx 1)
+                                ,(- idx *size*)
+                                ,(+ idx *size*)
+                                ,(- idx *size* 1)
+                                ,(+ idx *size* 1)
+                                ,(- idx *size* -1)
+                                ,(+ idx *size* -1))
 
-(defun fancy-eval-state (state) 
-    (+ (simple-eval-state state) 
-        (* 5.0 (mobility state))
-        (* 5.0 (stability state))
+                    ; if a blank is near the square it is a boundary
+                    when (and (in-bounds idx ndx) (equal (aref board ndx) '-)) 
+                        do (setf boundary (- boundary (if (equal (aref board idx) 'b) 1 -1)))
+                        and do (return nil)
+
+                    ; no blank is near the square, it must be internal
+                    finally  
+                        (setf internal (+ internal (if (equal (aref board idx) 'b) 1 -1)))
+                )
+            finally (return `(,internal ,boundary))
+        )
+    )
+)
+
+(defun fancy-eval-state (state)
+    (let ((it-bd (internal-boundary state)))
+        (+  
+            (* 1.5 (simple-eval-state state))
+            (* 0.5 (car it-bd))
+            (* 0.5 (cadr it-bd)) 
+            (* 10.0 (mobility state))
+            (* 10.0 (stability state))
+        )
     )
 )
 

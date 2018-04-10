@@ -276,6 +276,20 @@ Modifications:
     )
 )
 
+; Returns a list of all valid moves
+(defun generate-moves-quicker (board piece)
+    (let (moves)
+        ; for each possible move
+        (dotimes (row *SIZE*)
+            (dotimes (col *SIZE*)
+                ; if it results in a valid position, add it to list
+                (if (valid-move-p board row col piece) (push (list (1+ row) (1+ col)) moves))
+            )
+        )
+        moves
+    )
+)
+
 ;================  Valid Move  ================
 
 ; If (row col) is a valid move for the given piece on
@@ -325,7 +339,7 @@ Modifications:
         )
         
         ; check that the position is empty
-        (if (not (eq (nth position board) '-)) (return-from valid-move nil))
+        (if (not (eq (nth position board) '-)) (return-from valid-move-p nil))
 
         ; place a piece in the position
         (setf (nth position new-board) piece)
