@@ -284,8 +284,8 @@ Change Log:
                 do (setf (aref stable idx) (aref board idx)) 
                 and collect idx
         ))
-        (do ((candidates (gen-candidates board witnesses stab-full) (gen-candidates board witnesses stab-full)))
-            ((not candidates))
+        (do ((candidates (gen-candidates witnesses board stable stab-full) (gen-candidates witnesses board stable stab-full)))
+            ((not candidates) nil)
             (setf witnesses (loop for idx in candidates 
                 when (and (aref stab-full idx 0) 
                           (aref stab-full idx 1)
@@ -295,51 +295,51 @@ Change Log:
                     and collect idx
             ))
         )
-
+        (loop for idx from 0 below (* *size* *size*) summing (if (equal (aref stable idx) 'b) 1 -1))
     )
 )
 
 ; A piece neighboring a stable piece of the same color is stable in that direction and could potentially be a stable piece itself
-(defun gen-candidates (witnesses board stab-full)
-    (loop for idx in witnesses with ndx = nil
+(defun gen-candidates (witnesses board stable stab-full)
+    (remove-duplicates (loop for idx in witnesses with ndx = nil
         do (setf ndx (- idx 1)) ; go left direction = 2 (row)
-        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)) (not (aref stable ndx)))
             do (setf (aref stab-full ndx 2) t) and collect ndx
     
         do (setf ndx (+ idx 1)) ; go right direction = 2 (row)
-        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)) (not (aref stable ndx)))
             do (setf (aref stab-full ndx 2) t) and collect ndx
 
         do (setf ndx (- idx *size*)) ; go up direction = 3 (col)
-        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)) (not (aref stable ndx)))
             do (setf (aref stab-full ndx 3) t) and collect ndx
 
         do (setf ndx (+ idx *size*)) ; go up direction = 3 (col)
-        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)) (not (aref stable ndx)))
             do (setf (aref stab-full ndx 3) t) and collect ndx
 
         do (setf ndx (- idx *size* 1)) ; go NW direction = 0 (bak)
-        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)) (not (aref stable ndx)))
             do (setf (aref stab-full ndx 0) t) and collect ndx
         
         do (setf ndx (+ idx *size* 1)) ; go SE direction = 0 (bak)
-        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)) (not (aref stable ndx)))
             do (setf (aref stab-full ndx 0) t) and collect ndx
 
         do (setf ndx (- idx *size* -1)) ; go NE direction = 1 (for)
-        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)) (not (aref stable ndx)))
             do (setf (aref stab-full ndx 1) t) and collect ndx
 
         do (setf ndx (+ idx *size* -1)) ; go SW direction = 1 (for)
-        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)))
+        when (and (in-bounds idx ndx) (equal (aref board idx) (aref board ndx)) (not (aref stable ndx)))
             do (setf (aref stab-full ndx 1) t) and collect ndx
-    )
+    ))
 )
 
 (defun in-bounds (position next-pos)
     (cond 
         ((< next-pos 0) nil)
-        ((> next-pos (* *SIZE* *SIZE*)) nil)
+        ((>= next-pos (* *SIZE* *SIZE*)) nil)
         ((and (= (1- *SIZE*) (mod position *SIZE*)) (= 0 (mod next-pos *SIZE*))) nil)
         ((and (= 0 (mod position *SIZE*)) (= (1- *SIZE*) (mod next-pos *SIZE*))) nil)
         (t t)
@@ -348,9 +348,9 @@ Change Log:
 
 
 (defun fancy-eval-state (state) 
-    (+ (weighted-eval-state state) 
-        (* 20.0 (mobility state))
-        ;(progn (print (stability state)) 0.0)
+    (+ (simple-eval-state state) 
+        (* 5.0 (mobility state))
+        (* 5.0 (stability state))
     )
 )
 

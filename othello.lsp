@@ -374,7 +374,7 @@ Modifications:
 
             ; check if we've reached the edge of the board
             ((< next-pos 0) nil)
-            ((> next-pos (* *SIZE* *SIZE*)) nil)
+            ((>= next-pos (* *SIZE* *SIZE*)) nil)
             ((and (= (1- *SIZE*) (mod position *SIZE*)) (= 0 (mod next-pos *SIZE*))) nil)
             ((and (= 0 (mod position *SIZE*)) (= (1- *SIZE*) (mod next-pos *SIZE*))) nil)
 
