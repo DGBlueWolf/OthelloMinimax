@@ -142,6 +142,7 @@ Change Log:
 (defun end-condition (state)
     (game-over (othello-state-board state))
 )
+; (trace end-condition)
 
 ; generates the next set of moves
 (defun move-generator (state)
@@ -184,10 +185,12 @@ Change Log:
 ; sets up the function call for the computers move to interface with the game
 (defun computer-move (board player depth heuristic)
     (othello-minimax 
-        (make-othello-state 
-            :board board
-            :move nil
-            :piece player
+        (make-node ; Build a root node from state if not node
+            :state (make-othello-state 
+                :board board
+                :move nil
+                :piece player
+            )
         )
         (equal player 'B) ; The max player is black
         heuristic

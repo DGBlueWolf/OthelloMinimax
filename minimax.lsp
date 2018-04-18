@@ -48,17 +48,10 @@ Change Log:
 ;      end-condition    - A function which takes state and returns whether the game has ended or not
 ;      ply [int]        - The maximum recursion depth of the minimax algorithm (how many game-steps to look into the future) 
 ;
-(defun minimax (state player move-generator eval-state end-condition ply)
+(defun minimax (root player move-generator eval-state end-condition ply)
     ; Initialize local variables
     (let*
-        ((root ; If we were given a state, make this the root node
-            (if (equal (type-of state) 'node) 
-                state 
-                (make-node ; Build a root node from state if not node
-                    :state state
-                )
-            )   
-        )(skey ; Set the key comparator for sorting (children are not player)
+        ((skey ; Set the key comparator for sorting (children are not player)
             (if (not player)
                 (lambda (x y) (< (node-rank x) (node-rank y))) ; x < y is in order for the min player
                 (lambda (x y) (> (node-rank x) (node-rank y))) ; x > y is in order for the max player
@@ -72,16 +65,15 @@ Change Log:
 
         ;(format t ">Root (~A~A, ~A, alpha: ~A, beta: ~A):  ~A~%" 
             ;(if player 'B 'W) ply (node-rank root) (node-alpha root) (node-beta root) (othello-state-move (node-state root)))
-
         ; If we've hit the bottom, set bound to the value of rank and return root
         (when (deep-enough root ply end-condition) (progn
+            (funcall end-condition (node-state root))
             (if player
                 (setf (node-alpha root) (node-rank root))
                 (setf (node-beta  root) (node-rank root))
             ) 
             (return-from minimax root))
         )
-
         ; Otherwise loop through successors
         (loop for n in
                 ; Sort each generated successor by it's evaluation function
@@ -155,3 +147,5 @@ Change Log:
         (funcall end-condition (node-state root)) ; game over
     )
 )
+
+;(trace deep-enough)

@@ -304,7 +304,7 @@ Modifications:
         )
 
         ; check that the position is empty
-        (if (not (eq (nth position board) '-)) (return-from valid-move nil))
+        (if (not (string= (string (nth position board)) "-")) (return-from valid-move nil))
 
         ; place a piece in the position
         (setf (nth position new-board) piece)
@@ -339,7 +339,7 @@ Modifications:
         )
         
         ; check that the position is empty
-        (if (not (eq (nth position board) '-)) (return-from valid-move-p nil))
+        (if (not (equalp (string (nth position board)) "-")) (return-from valid-move-p nil))
 
         ; place a piece in the position
         (setf (nth position new-board) piece)
@@ -381,10 +381,10 @@ Modifications:
     (let (flip (next-pos (+ position step)))
         (cond
             ; check if we've reached a match to the given piece
-            ((and (eq (nth position board) piece) (> count 1)) t)
+            ((and (string= (string (nth position board)) (string piece)) (> count 1)) t)
 
             ; check if the first match is after one step
-            ((and (eq (nth position board) piece) (= count 1)) nil)
+            ((and (string= (string (nth position board)) (string piece)) (= count 1)) nil)
 
             ; check if we've reached the edge of the board
             ((< next-pos 0) nil)
@@ -393,7 +393,7 @@ Modifications:
             ((and (= 0 (mod position *SIZE*)) (= (1- *SIZE*) (mod next-pos *SIZE*))) nil)
 
             ; check if we've reached an empty space
-            ((eq (nth position board) '-) nil)
+            ((equalp (string (nth position board)) "-") nil)
 
             (T
                 ; do recursive call
@@ -453,27 +453,25 @@ Modifications:
 
 (defun make-move (position player depth)
     "make move in given position, returns (row col)"
-    (if (can-move position player)
-        (setf move (computer-move position player depth 'fancy-eval-state))
-        (format t "~%Player ~A cannot move" player)
+    (when (can-move position player)
+        (computer-move position player depth 'fancy-eval-state)
     )
-    move
 )
 
 ;================ Check command line arguments ==============
-(when 
-    (or 
-        (> (length *args*) 2) 
-        (and 
-            (= (length *args*) 1) 
-            (equal (read-from-string (car *args*)) 'help)
-        ) 
+(when (boundp '*args*)
+    (when 
+        (or 
+            (> (length *args*) 2) 
+            (and 
+                (= (length *args*) 1) 
+                (equal (read-from-string (car *args*)) 'help)
+            ) 
+        )
+        (progn 
+            (format t "Usage:~%    $ othello [B/W] [ply]~2%        - `ply` is an integer.~2%")
+            (exit)
+        )
     )
-    (progn 
-        (format t "Usage:~%    $ othello [B/W] [ply]~2%        - `ply` is an integer.~2%")
-        (exit)
-    )
+    (apply #'othello (map 'list #'read-from-string *args*))
 )
-
-    
-(apply #'othello (map 'list #'read-from-string *args*))
